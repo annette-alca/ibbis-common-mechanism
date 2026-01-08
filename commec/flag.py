@@ -56,7 +56,7 @@ def add_args(parser: argparse.ArgumentParser):
         "--evalportal-format",
         dest="evalportal_format",
         action="store_true",
-        help="Output format compatible with the IBBIS sceening evlauation portal",
+        help="Output format compatible with the IBBIS sceening evaluation portal",
     )
     return parser
 
