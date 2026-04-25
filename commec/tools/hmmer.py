@@ -187,9 +187,40 @@ def recalculate_hmmer_query_coordinates(hmmer : pd.DataFrame):
         hmmer["ali to"].to_numpy(),
         hmmer["nt_qlen"].to_numpy())
 
+def resolve_query_from_hmmer_name(hmmer_query_name: str, queries: dict[str, Query]) -> Query:
+    """
+    Map a hmmer query name back to its original Query.
+
+    Six-frame translation appends "_<frame>" (frame 1-6) to the query name, so the
+    naive inverse is to strip the trailing "_<digit>". That works most of the time
+    but fails if the name was truncated upstream (some HMMER builds shorten long
+    query names, and stale output files can mix naming schemes). When the exact
+    strip doesn't hit, fall back to the longest matching prefix in the queries
+    dict so the run can still complete.
+    """
+    stripped = hmmer_query_name.rsplit("_", 1)[0]
+    if stripped in queries:
+        return queries[stripped]
+
+    candidates = [
+        name for name in queries
+        if name.startswith(stripped) or stripped.startswith(name)
+    ]
+    if candidates:
+        return queries[max(candidates, key=len)]
+
+    raise KeyError(
+        f"hmmer query name {hmmer_query_name!r} does not match any input query "
+        f"(known: {sorted(queries)})"
+    )
+
+
 def append_nt_querylength_info(hmmer : pd.DataFrame, queries : dict[str, Query]):
-    """ 
-    Take the hmmer output, and add a series (nt_qlen) 
+    """
+    Take the hmmer output, and add a series (nt_qlen)
     of the true nt length based on query name.
     """
-    hmmer["nt_qlen"] = [queries[q[:-2]].length for q in hmmer["query name"]]
+    hmmer["nt_qlen"] = [
+        resolve_query_from_hmmer_name(q, queries).length
+        for q in hmmer["query name"]
+    ]
