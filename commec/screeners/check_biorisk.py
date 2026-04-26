@@ -15,6 +15,7 @@ from commec.tools.hmmer import (
     remove_overlaps,
     recalculate_hmmer_query_coordinates,
     append_nt_querylength_info,
+    resolve_query_from_hmmer_name,
     HmmerHandler
 )
 from commec.config.result import (
@@ -136,7 +137,7 @@ def parse_biorisk_hits(search_handler : HmmerHandler,
             logger.error("Query during hmmscan could not be found! [%s]", affected_query)
             continue
 
-        queries[affected_query[:-2]].mark_as_hit()
+        resolve_query_from_hmmer_name(affected_query, queries).mark_as_hit()
 
         # Grab a list of unique queries, and targets for iteration.
         unique_query_data : pd.DataFrame = hmmer[hmmer['query name'] == affected_query]
